@@ -5,6 +5,7 @@
 #include <string.h>
 #include "ui_attention.h"
 
+// #compareByName
 static int compareByName(const void* a, const void* b) {
 	const Contact* ca = (const Contact*)a;
 	const Contact* cb = (const Contact*)b;
@@ -20,6 +21,8 @@ static int compareByName(const void* a, const void* b) {
 
 	deleteString(lowerA);
 	deleteString(lowerB);
+	free((void*)lowA);
+	free((void*)lowB);
 
 	// 2. 如果字母顺序不同，直接返回（例如 "apple" vs "banana"）
 	if (result != 0) {
@@ -31,8 +34,13 @@ static int compareByName(const void* a, const void* b) {
 	const char* origA = getStringContent(ca->name);
 	const char* origB = getStringContent(cb->name);
 
-	return strcmp(origA, origB);
+	int cmpResult = strcmp(origA, origB);
+	free((void*)origA);
+	free((void*)origB);
+
+	return cmpResult;
 }
+// #compareByNumber
 static int compareByNumber(const void* a, const void* b) {
 	const Contact* ca = (const Contact*)a;
 	const Contact* cb = (const Contact*)b;
@@ -40,20 +48,35 @@ static int compareByNumber(const void* a, const void* b) {
 	const char* numberB = getStringContent(cb->number);
 	// 防御性处理：如果号码是 NULL，把它视为空字符串来比，避免崩溃
 	if (!numberA && !numberB) return 0;
-	if (!numberA) return -1;
-	if (!numberB) return 1;
-	return strcmp(numberA, numberB);
+	if (!numberA) {
+		free((void*)numberB);
+		return -1;
+	}
+	if (!numberB) {
+		free((void*)numberA);
+		return 1;
+	}
+
+	int result = strcmp(numberA, numberB);
+	free((void*)numberA);
+	free((void*)numberB);
+	return result;
 }
 
+// #displayContacts
 static void displayContacts(Contact* contacts, int count) {
 	for (int i = 0; i < count; i++) {
 		const char* name = getStringContent(contacts[i].name);
 		const char* number = getStringContent(contacts[i].number);
 		// 只输出数据，不加边框和提示文字
 		printf("%s|%s\n", name ? name : "", number ? number : "");
+
+		free(name);
+		free(number);
 	}
 }
 
+// #showThroughName
 bool showThroughName(const char* filename) {
 	int count = 0;
 	Contact* contacts = loadContactsFromFile(filename, &count);
@@ -74,6 +97,7 @@ bool showThroughName(const char* filename) {
 	return true;
 }
 
+// #showThroughNumber
 bool showThroughNumber(const char* filename) {
 	int count = 0;
 	Contact* contacts = loadContactsFromFile(filename, &count);
@@ -94,6 +118,7 @@ bool showThroughNumber(const char* filename) {
 	return true;
 }
 
+// #showContacts
 void showContacts(Contact* contacts, int count) {
 	if (!contacts || count <= 0) {
 		failedToFindContact();
@@ -102,6 +127,7 @@ void showContacts(Contact* contacts, int count) {
 	displayContacts(contacts, count);
 }
 
+// #saveContacts
 int saveContacts(Contact* contacts, const char* filename, const int count) {
 	if (!contacts || !filename || count < 0) return -1;
 

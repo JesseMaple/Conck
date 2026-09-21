@@ -1,6 +1,7 @@
 #include "service_retrieve.h"
 #include "ui_menu.h"
-#include "util_string.h"
+#include "JC_String.h"
+#include "JC_Scanner.h"
 #include "ui_attention.h"
 #include <string.h>
 #include "service_other.h"
@@ -8,7 +9,7 @@
 #include "util_file.h"
 #include <stdlib.h>
 
-void retrieve(bool isDebug) {
+void retrieve() {
 	/*
 	进入 look up
 	1. 按文件顺序显示所有联系人（不排序）
@@ -38,20 +39,14 @@ void retrieve(bool isDebug) {
 	retrieveMenu();
 	while(1) {
 		string input = nextLine();
-		if(getStringStatus(input)) {
-			if(!isDebug) {
-				stringStatusError();
-				deleteString(input);
-				continue;
-			}
-			else {
-				stringStatusErrorD(input);
-				deleteString(input);
-				continue;
-			}
+		if(getStringStatus(input) != AVAILABLE) {
+			stringStatusErrorD(input);
+			deleteString(input);
+			continue;
+			
 		}
  
-		if(!strcmp(getStringContent(input), "return")) {
+		if(equalsFrom(input, "return")) {
 			for(int i=0; i < count; i++) {
 				deleteString(contacts[i].name);
 				deleteString(contacts[i].number);
@@ -61,21 +56,21 @@ void retrieve(bool isDebug) {
 			break;
 		}
 	 
-		if(!strcmp(getStringContent(input), "name")) {
+		if(equalsFrom(input, "name")) {
 			rerangeSucceed();
 			showThroughName("contacts.txt");
 			deleteString(input);
 			continue;
 		}
 	 
-		if(!strcmp(getStringContent(input), "number")) {
+		if(equalsFrom(input, "number")) {
 			rerangeSucceed();
 			showThroughNumber("contacts.txt");
 			deleteString(input);
 			continue;
 		}
 	 
-		if(!strcmp(getStringContent(input), "prompt")) {
+		if(equalsFrom(input, "prompt")) {
 			retrievePrompt();
 			deleteString(input);
 		continue;

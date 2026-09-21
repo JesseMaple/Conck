@@ -1,6 +1,7 @@
 #include "service_updata.h"
 #include "ui_menu.h"
-#include "util_string.h"
+#include "JC_String.h"
+#include "JC_Scanner.h"
 #include "ui_attention.h"
 #include <string.h>
 #include "service_retrieve.h"
@@ -9,7 +10,7 @@
 #include <stdlib.h>
 #include "ui_prompt.h"
 
-void modify(bool isDebug) {
+void modify() {
 	while (1) {
 		/*
 		* 该层释放
@@ -21,28 +22,19 @@ void modify(bool isDebug) {
 
 		// 字符串保护
 		if (getStringStatus(input)) {
-			// 用户模式
-			if (!isDebug) {
-				stringStatusError();
-				deleteString(input);
-				continue;
-			}
-			// 开发者模式
-			else {
-				stringStatusErrorD(input);
-				deleteString(input);
-				continue;
-			}
+			stringStatusErrorD(input);
+			deleteString(input);
+			continue;
 		}
 
 		// 返回指令
-		if (!strcmp(getStringContent(input), "return")) {
+		if (equalsFrom(input, "return")) {
 			deleteString(input);
 			break;
 		}
 		// 浏览指令
-		if (!strcmp(getStringContent(input), "retrieve")) {
-			retrieve(isDebug);
+		if (equalsFrom(input, "retrieve")) {
+			retrieve();
 			deleteString(input);
 			continue;
 		}
@@ -87,8 +79,12 @@ void modify(bool isDebug) {
 
 		for (int i = 0;i < count;i++) {
 			if (contains(contacts[i].name, input) || contains(contacts[i].number, input)) {
-				matchedContacts[idx].name = newStringFrom(getStringContent(contacts[i].name));
-				matchedContacts[idx++].number = newStringFrom(getStringContent(contacts[i].number));
+				char* nameContent = getStringContent(contacts[i].name);
+				char* numberContent = getStringContent(contacts[i].number);
+				matchedContacts[idx].name = newStringFrom(nameContent);
+				matchedContacts[idx++].number = newStringFrom(numberContent);
+				free(nameContent);
+				free(numberContent);
 			}
 		}
 
@@ -106,21 +102,12 @@ void modify(bool isDebug) {
 			string whichOne = nextLine();
 			// 字符串保护
 			if (getStringStatus(whichOne)) {
-				// 用户模式
-				if (!isDebug) {
-					stringStatusError();
-					deleteString(whichOne);
-					continue;
-				}
-				// 开发者模式
-				else {
-					stringStatusErrorD(whichOne);
-					deleteString(whichOne);
-					continue;
-				}
+				stringStatusErrorD(whichOne);
+				deleteString(whichOne);
+				continue;
 			}
 			// 返回指令
-			if (!strcmp(getStringContent(whichOne), "return")) {
+			if (equalsFrom(whichOne, "return")) {
 				deleteString(whichOne);
 				break;
 			}
@@ -156,37 +143,30 @@ void modify(bool isDebug) {
 				string choice = nextLine();
 				// 字符串保护
 				if (getStringStatus(choice)) {
-					// 用户模式
-					if (!isDebug) {
-						stringStatusError();
-						deleteString(choice);
-						continue;
-					}
-					// 开发者模式
-					else {
-						stringStatusErrorD(choice);
-						deleteString(choice);
-						continue;
-					}
+					stringStatusErrorD(choice);
+					deleteString(choice);
+					continue;
 				}
 
 				// 返回指令
-				if (!strcmp(getStringContent(choice), "return")) {
+				if (equalsFrom(choice, "return")) {
 					deleteString(choice);
 					break;
 				}
 				// name指令
-				if (!strcmp(getStringContent(choice), "name")) {
+				if (equalsFrom(choice, "name")) {
 					choiceFlag = 1;
 				}
 				// number指令
-				else if (!strcmp(getStringContent(choice), "number")) {
+				else if (equalsFrom(choice, "number")) {
 					choiceFlag = 2;
 				}
 				// 非法指令，重新输入
 				else {
-					invalidCmd(getStringContent(choice));
+					char* cmd = getStringContent(choice);
+					invalidCmd(cmd);
 					deleteString(choice);
+					free(cmd);
 					continue;
 				}
 				while (1) {
@@ -198,48 +178,63 @@ void modify(bool isDebug) {
 					string info = nextLine();
 					// 字符串保护
 					if (getStringStatus(info)) {
-						// 用户模式
-						if (!isDebug) {
-							stringStatusError();
-							deleteString(info);
-							continue;
-						}
-						// 开发者模式
-						else {
-							stringStatusErrorD(info);
-							deleteString(info);
-							continue;
-						}
+						stringStatusErrorD(info);
+						deleteString(info);
+						continue;
 					}
 					// 返回指令
-					if (!strcmp(getStringContent(info), "return")) {
+					if (equalsFrom(info, "return")) {
 						deleteString(info);
 						break;
 					}
 					if (choiceFlag == 1) {
-						// 修改信息如果失败
-						if (!setStringContent(contacts[flag].name, getStringContent(info))||!setStringContent(matchedContacts[matchedFlag].name, getStringContent(info))) {
+						char* content = getStringContent(info);
+						string newName = NULL, newMatchedName = NULL;
+						if (content) {
+							newName = newStringFrom(content);
+							newMatchedName = newStringFrom(content);
+							free(content);
+						}
+						if (!newName || getStringStatus(newName) || !newMatchedName || getStringStatus(newMatchedName)) {
+							deleteString(newName);
+							deleteString(newMatchedName);
 							failedToChangeInfo();
 							deleteString(info);
 							continue;
 						}
-						else {
-							succeedToChangeInfo();
-							deleteString(info);
-							continue;
-						}
+						deleteString(contacts[flag].name);
+						contacts[flag].name = newName;
+						deleteString(matchedContacts[matchedFlag].name);
+						matchedContacts[matchedFlag].name = newMatchedName;
+
+						succeedToChangeInfo();
+						deleteString(info);
+						continue;
 					}
 					if (choiceFlag == 2) {
-						if (!setStringContent(contacts[flag].number, getStringContent(info))||!setStringContent(matchedContacts[matchedFlag].number, getStringContent(info))) {
+						char* content = getStringContent(info);
+						string newNumber = NULL, newMatchedNumber = NULL;
+						if (content) {
+							newNumber = newStringFrom(content);
+							newMatchedNumber = newStringFrom(content);
+							free(content);
+						}
+						if (!newNumber || getStringStatus(newNumber) ||
+							!newMatchedNumber || getStringStatus(newMatchedNumber)) {
+							deleteString(newNumber);
+							deleteString(newMatchedNumber);
 							failedToChangeInfo();
 							deleteString(info);
 							continue;
 						}
-						else {
-							succeedToChangeInfo();
-							deleteString(info);
-							continue;
-						}
+						deleteString(contacts[flag].number);
+						contacts[flag].number = newNumber;
+						deleteString(matchedContacts[matchedFlag].number);
+						matchedContacts[matchedFlag].number = newMatchedNumber;
+
+						succeedToChangeInfo();
+						deleteString(info);
+						continue;
 					}
 				}
 			}

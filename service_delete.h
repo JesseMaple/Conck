@@ -2,4 +2,4 @@
 
 #include <stdbool.h>
 
-void delete(bool isDebug);
+void delete();

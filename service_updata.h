@@ -2,4 +2,4 @@
 
 #include <stdbool.h>
 
-void modify(bool isDebug);
+void modify();

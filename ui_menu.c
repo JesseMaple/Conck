@@ -3,6 +3,7 @@
 #include "ui_prompt.h"
 
 // 主菜单
+// #mainMenu
 void mainMenu(void) {
 	printf(
 		"\n===================================\n\n\n"
@@ -16,6 +17,7 @@ void mainMenu(void) {
 	);
 }
 
+// #createMenu
 void createMenu(void) {
 	printf(
 		"\n===================================\n\n\n"
@@ -27,11 +29,13 @@ void createMenu(void) {
 	);
 }
 
+// #retrieveMenu
 void retrieveMenu(void) {
 	retrievePrompt();
 	printf("Please input the information of the contact you want to find:\n");
 }
 
+// #updateMenu
 void updataMenu(void) {
 	printf(
 		"\n===================================\n\n\n"
@@ -42,6 +46,7 @@ void updataMenu(void) {
 	);
 }
 
+// #deleteMenu
 void deleteMenu(void) {
 	printf(
 		"\n===================================\n\n\n"

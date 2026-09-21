@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include "util_string.h"
+#include "JC_String.h"
 #include "service_other.h"
 
 bool saveContactA(string name, string number, const char* filename);

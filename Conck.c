@@ -1,5 +1,6 @@
 ﻿#include "ui_menu.h"
-#include "util_string.h"
+#include "JC_String.h"
+#include "JC_Scanner.h"
 #include "ui_attention.h"
 #include <stdio.h>
 #include <stdbool.h>
@@ -9,8 +10,6 @@
 #include "service_retrieve.h"
 #include "service_updata.h"
 #include "service_delete.h"
-
-bool isDebug = true;
 
 int main(void) {
 	MAIN:
@@ -22,47 +21,41 @@ int main(void) {
 
 		// 检查字符串状态
 		if (getStringStatus(input)) {
-			// 用户模式
-			if (!isDebug) {
-				stringStatusError();
-				deleteString(input);
-				continue;
-			}
-			// 开发者模式
-			else {
-				stringStatusErrorD(input);
-				deleteString(input);
-				continue;
-			}
+			stringStatusErrorD(input);
+			deleteString(input);
+			continue;
+			
 		}
 
 		string cmd = trim(input);
 		deleteString(input);
 		input = NULL;
 
-		if (!strcmp(getStringContent(cmd), "look up")) {
-			retrieve(isDebug);
+		if (equalsFrom(cmd,"look up")) {
+			retrieve();
 			deleteString(cmd);
 		}
-		else if (!strcmp(getStringContent(cmd), "add")) {
-			create(isDebug);
+		else if (equalsFrom(cmd,"add")) {
+			create();
 			deleteString(cmd);
 		}
-		else if (!strcmp(getStringContent(cmd), "modify")) {
-			modify(isDebug);
+		else if (equalsFrom(cmd,"modify")) {
+			modify();
 			deleteString(cmd);
 		}
-		else if (!strcmp(getStringContent(cmd), "delete")) {
-			delete(isDebug);
+		else if (equalsFrom(cmd,"delete")) {
+			delete();
 			deleteString(cmd);
 		}
-		else if (!strcmp(getStringContent(cmd), "exit")) {
+		else if (equalsFrom(cmd,"exit")) {
 			deleteString(cmd);
 			exit(0);
 		}
 		else {
-			invalidCmd(getStringContent(cmd));
+			char* cmdContent = getStringContent(cmd);
+			invalidCmd(cmdContent);
 			deleteString(cmd);
+			free(cmdContent);
 			goto MAIN;
 		}
 	}

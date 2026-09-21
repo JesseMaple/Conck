@@ -1,6 +1,7 @@
 #include "service_delete.h"
 #include "ui_menu.h"
-#include "util_string.h"
+#include "JC_String.h"
+#include "JC_Scanner.h"
 #include "ui_attention.h"
 #include <string.h>
 #include "service_retrieve.h"
@@ -9,7 +10,7 @@
 #include <stdlib.h>
 #include "ui_prompt.h"
 
-void delete(bool isDebug) {
+void delete() {
 	while (1) {
 		/*
 		* 该层释放
@@ -21,28 +22,19 @@ void delete(bool isDebug) {
 
 		// 字符串保护
 		if (getStringStatus(input)) {
-			// 用户模式
-			if (!isDebug) {
-				stringStatusError();
-				deleteString(input);
-				continue;
-			}
-			// 开发者模式
-			else {
-				stringStatusErrorD(input);
-				deleteString(input);
-				continue;
-			}
+			stringStatusErrorD(input);
+			deleteString(input);
+			continue;
 		}
 
 		// 返回指令
-		if (!strcmp(getStringContent(input), "return")) {
+		if (equalsFrom(input, "return")) {
 			deleteString(input);
 			break;
 		}
 		// 浏览指令
-		if (!strcmp(getStringContent(input), "retrieve")) {
-			retrieve(isDebug);
+		if (equalsFrom(input, "retrieve")) {
+			retrieve();
 			deleteString(input);
 			continue;
 		}
@@ -87,8 +79,12 @@ void delete(bool isDebug) {
 
 		for (int i = 0;i < count;i++) {
 			if (contains(contacts[i].name, input) || contains(contacts[i].number, input)) {
-				matchedContacts[idx].name = newStringFrom(getStringContent(contacts[i].name));
-				matchedContacts[idx++].number = newStringFrom(getStringContent(contacts[i].number));
+				char* nameContent = getStringContent(contacts[i].name);
+				char* numberContent = getStringContent(contacts[i].number);
+				matchedContacts[idx].name = newStringFrom(nameContent);
+				matchedContacts[idx++].number = newStringFrom(numberContent);
+				free(nameContent);
+				free(numberContent);
 			}
 		}
 
@@ -106,21 +102,12 @@ void delete(bool isDebug) {
 			string whichOne = nextLine();
 			// 字符串保护
 			if (getStringStatus(whichOne)) {
-				// 用户模式
-				if (!isDebug) {
-					stringStatusError();
-					deleteString(whichOne);
-					continue;
-				}
-				// 开发者模式
-				else {
-					stringStatusErrorD(whichOne);
-					deleteString(whichOne);
-					continue;
-				}
+				stringStatusErrorD(whichOne);
+				deleteString(whichOne);
+				continue;
 			}
 			// 返回指令
-			if (!strcmp(getStringContent(whichOne), "return")) {
+			if (equalsFrom(whichOne, "return")) {
 				deleteString(whichOne);
 				break;
 			}
@@ -154,27 +141,18 @@ void delete(bool isDebug) {
 				string choice = nextLine();
 				// 字符串保护
 				if (getStringStatus(choice)) {
-					// 用户模式
-					if (!isDebug) {
-						stringStatusError();
-						deleteString(choice);
-						continue;
-					}
-					// 开发者模式
-					else {
-						stringStatusErrorD(choice);
-						deleteString(choice);
-						continue;
-					}
+					stringStatusErrorD(choice);
+					deleteString(choice);
+					continue;
 				}
 
 				// 返回指令
-				if (!strcmp(getStringContent(choice), "return")) {
+				if (equalsFrom(choice, "return")) {
 					deleteString(choice);
 					break;
 				}
 				// yes指令
-				if (!strcmp(getStringContent(choice), "yes")) {
+				if (equalsFrom(choice, "yes")) {
 					deleteString(contacts[flag].name);
 					deleteString(contacts[flag].number);
 					deleteString(matchedContacts[matchedFlag].name);
@@ -194,15 +172,17 @@ void delete(bool isDebug) {
 					break;
 				}
 				// no指令
-				else if (!strcmp(getStringContent(choice), "no")) {
+				else if (equalsFrom(choice, "no")) {
 					deleteCancel();
 					deleteString(choice);
 					break;
 				}
 				// 非法指令，重新输入
 				else {
-					invalidCmd(getStringContent(choice));
+					char* cmd = getStringContent(choice);
+					invalidCmd(cmd);
 					deleteString(choice);
+					free(cmd);
 					continue;
 				}
 			}
