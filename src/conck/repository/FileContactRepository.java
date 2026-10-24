@@ -1,53 +1,67 @@
 package conck.repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import conck.model.Contact;
 
-public class FileContactRepository implements ContactRepository{
-	private String filepath;
-	
-	public FileContactRepository(String filepath) {
-		this.filepath=filepath;
-	}
-	
-	@Override
-	public List<Contact> findAll(){
-		List<Contact> contacts=new ArrayList<>();
-		
-		try(BufferedReader br=new BufferedReader(new FileReader(filepath))){
-			String line;
-			while((line=br.readLine())!=null) {
-				String[] parts=line.split("\\|",2);
-				if(parts.length==2) {
-					contacts.add(new Contact(parts[0],parts[1]));
-				}
-			}
-		}
-		catch(IOException e) {
-			System.err.println("Failed to load contacts"+e.getMessage());
-		}
-		
-		return contacts;
-	}
-	
-	@Override
-	public void saveAll(List<Contact> contacts) {
-		try(BufferedWriter bw=new BufferedWriter(new FileWriter(filepath))){
-			for(Contact contact:contacts) {
-				if(contact!=null) {
-					bw.write(contact.name()+"|"+contact.number());
-					bw.newLine();
-				}
-			}
-		}
-		catch(IOException e) {
-			System.err.println("Failed to save contacts"+e.getMessage());
-		}
-	}
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
+
+public class FileContactRepository implements ContactRepository {
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Type LIST_TYPE = new TypeToken<List<Contact>>() {}.getType();
+
+    private final Path path;
+
+    public FileContactRepository(String filepath) {
+        this.path = Path.of(filepath);
+    }
+
+    @Override
+    public List<Contact> findAll() {
+        if (Files.notExists(path)) {
+            return new ArrayList<>();
+        }
+        try (Reader r = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            List<Contact> list = GSON.fromJson(r, LIST_TYPE);
+            return list == null ? new ArrayList<>() : list;
+        } catch (IOException e) {
+            System.err.println("Failed to load contacts: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public void saveAll(List<Contact> contacts) {
+        Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
+        try {
+            Path parent = path.toAbsolutePath().getParent();
+            if (parent != null) Files.createDirectories(parent);
+
+            // 1. 写临时文件
+            try (Writer w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
+                GSON.toJson(contacts, w);
+            }
+            // 2. 原子替换（Windows 上个别场景 ATOMIC_MOVE 不可用，回退普通替换）
+            try {
+                Files.move(tmp, path,
+                        StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException ex) {
+                Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to save contacts: " + e.getMessage());
+        }
+    }
 }
